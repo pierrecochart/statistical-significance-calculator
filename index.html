@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A/B Winner: Statistical Significance Calculator | Pierre Cochart</title>
+    <meta name="description" content="Determine the winner of your A/B tests with statistical confidence. Calculate conversion rates, significance levels, and sample sizes instantly.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --secondary: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); padding: 2rem 1rem; line-height: 1.6; }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 3rem; }
+        h1 {
+            font-size: 2.75rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: var(--secondary); font-size: 1.1rem; }
+
+        /* Input Grid */
+        .calculator-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;
+        }
+
+        .variant-card {
+            background: var(--card); border-radius: 1.25rem; border: 1px solid var(--border);
+            padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); position: relative;
+            transition: transform 0.2s;
+        }
+        .variant-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+
+        .variant-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border); padding-bottom: 1rem;
+        }
+        .variant-title { font-weight: 800; font-size: 1.1rem; color: var(--text); }
+        .variant-badge {
+            background: #eef2ff; color: var(--primary); padding: 0.25rem 0.75rem;
+            border-radius: 1rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        }
+
+        .input-group { margin-bottom: 1.25rem; }
+        .input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem; text-transform: uppercase; }
+        
+        input[type="number"] {
+            width: 100%; padding: 0.8rem; border: 2px solid var(--border); border-radius: 0.75rem;
+            font-size: 1.1rem; font-family: 'Inter', sans-serif; transition: 0.2s;
+        }
+        input[type="number"]:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+
+        /* Results Panel */
+        .results-panel {
+            background: #1e293b; color: white; border-radius: 1.5rem; padding: 2.5rem;
+            text-align: center; margin-bottom: 3rem; position: relative; overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .result-main { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .result-sub { font-size: 1.1rem; color: #94a3b8; max-width: 600px; margin: 0 auto; }
+        
+        .confidence-meter {
+            height: 8px; background: #334155; border-radius: 4px; margin: 2rem auto 1rem;
+            max-width: 400px; position: relative; overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%; background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            width: 0%; transition: width 1s ease-out;
+        }
+
+        .stats-row {
+            display: flex; justify-content: center; gap: 3rem; margin-top: 2rem;
+            border-top: 1px solid #334155; padding-top: 2rem;
+        }
+        .stat-box { text-align: center; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; display: block; margin-bottom: 0.25rem; }
+        .stat-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Tooltip Logic */
+        .tooltip { position: relative; display: inline-block; cursor: help; margin-left: 5px; }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 200px; background-color: #333; color: #fff; text-align: center;
+            border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%;
+            margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 0.75rem; font-weight: 400; text-transform: none;
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+        .footer-cta { margin-top: 5rem; text-align: center; border-top: 1px solid var(--border); padding-top: 3rem; }
+
+        @media (max-width: 768px) {
+            .calculator-grid { grid-template-columns: 1fr; }
+            .stats-row { flex-direction: column; gap: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>A/B Winner</h1>
+            <p class="subtitle">Calculate statistical significance for your conversion optimization tests.</p>
+        </header>
+
+        <div class="calculator-grid">
+            <div class="variant-card">
+                <div class="variant-header">
+                    <span class="variant-title">Variant A</span>
+                    <span class="variant-badge">Control</span>
+                </div>
+                <div class="input-group">
+                    <label>Visitors (Sessions) <span class="tooltip">ℹ️<span class="tooltiptext">Total number of unique users who saw this version.</span></span></label>
+                    <input type="number" id="visitors-a" placeholder="e.g. 5000">
+                </div>
+                <div class="input-group">
+                    <label>Conversions (Goals)</label>
+                    <input type="number" id="conversions-a" placeholder="e.g. 200">
+                </div>
+                <div style="text-align: right; color: var(--secondary); font-size: 0.9rem;">
+                    Conv. Rate: <strong id="cr-a">0%</strong>
+                </div>
+            </div>
+
+            <div class="variant-card" style="border-color: var(--primary);">
+                <div class="variant-header">
+                    <span class="variant-title" style="color: var(--primary);">Variant B</span>
+                    <span class="variant-badge" style="background: #e0e7ff; color: var(--primary);">Challenger</span>
+                </div>
+                <div class="input-group">
+                    <label>Visitors (Sessions)</label>
+                    <input type="number" id="visitors-b" placeholder="e.g. 5000">
+                </div>
+                <div class="input-group">
+                    <label>Conversions (Goals)</label>
+                    <input type="number" id="conversions-b" placeholder="e.g. 250">
+                </div>
+                <div style="text-align: right; color: var(--primary); font-size: 0.9rem;">
+                    Conv. Rate: <strong id="cr-b">0%</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-panel">
+            <h2 class="result-main" id="result-title">Waiting for Data...</h2>
+            <p class="result-sub" id="result-desc">Enter your test data above to see if your results are statistically significant.</p>
+            
+            <div class="confidence-meter">
+                <div class="confidence-fill" id="meter-fill"></div>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-val" id="confidence-val">0%</span>
+                    <span class="stat-label">Confidence Level</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val" id="uplift-val">0%</span>
+                    <span class="stat-label">Observed Uplift</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val" id="p-val">-</span>
+                    <span class="stat-label">P-Value</span>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer-cta">
+            <a href="https://www.buymeacoffee.com/PierreCochart" target="_blank">
+                <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 50px; width: 217px;">
+            </a>
+            <p style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--secondary);">Built by Pierre Cochart</p>
+        </footer>
+    </div>
+
+    <script>
+        // Inputs
+        const inputs = document.querySelectorAll('input[type="number"]');
+        const visitorsA = document.getElementById('visitors-a');
+        const conversionsA = document.getElementById('conversions-a');
+        const visitorsB = document.getElementById('visitors-b');
+        const conversionsB = document.getElementById('conversions-b');
+
+        // Outputs
+        const crA = document.getElementById('cr-a');
+        const crB = document.getElementById('cr-b');
+        const resultTitle = document.getElementById('result-title');
+        const resultDesc = document.getElementById('result-desc');
+        const meterFill = document.getElementById('meter-fill');
+        const confidenceVal = document.getElementById('confidence-val');
+        const upliftVal = document.getElementById('uplift-val');
+        const pValDisplay = document.getElementById('p-val');
+
+        // Event Listeners
+        inputs.forEach(input => input.addEventListener('input', calculate));
+
+        function calculate() {
+            const vA = parseInt(visitorsA.value) || 0;
+            const cA = parseInt(conversionsA.value) || 0;
+            const vB = parseInt(visitorsB.value) || 0;
+            const cB = parseInt(conversionsB.value) || 0;
+
+            // Basic CR Calculation
+            const rateA = vA > 0 ? (cA / vA) : 0;
+            const rateB = vB > 0 ? (cB / vB) : 0;
+
+            crA.textContent = (rateA * 100).toFixed(2) + '%';
+            crB.textContent = (rateB * 100).toFixed(2) + '%';
+
+            if (vA === 0 || vB === 0) return;
+
+            // Z-Score Calculation (Two-Proportion Z-Test)
+            const pPool = (cA + cB) / (vA + vB);
+            const se = Math.sqrt(pPool * (1 - pPool) * (1/vA + 1/vB));
+            const zScore = (rateB - rateA) / se;
+
+            // P-Value from Z-Score (Cumulative Distribution Function)
+            // Using an approximation for normal distribution
+            const pValue = 2 * (1 - cdf(Math.abs(zScore)));
+            const confidence = (1 - pValue) * 100;
+
+            // Uplift
+            const uplift = rateA > 0 ? ((rateB - rateA) / rateA) * 100 : 0;
+
+            updateUI(confidence, uplift, pValue, rateB > rateA);
+        }
+
+        // Standard Normal Cumulative Distribution Function
+        function cdf(x) {
+            const t = 1 / (1 + .2316419 * Math.abs(x));
+            const d = .3989423 * Math.exp(-x * x / 2);
+            let prob = d * t * (.3193815 + t * (-.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+            if (x > 0) prob = 1 - prob;
+            return prob;
+        }
+
+        function updateUI(confidence, uplift, pValue, isPositive) {
+            confidenceVal.textContent = confidence.toFixed(2) + '%';
+            upliftVal.textContent = (uplift > 0 ? '+' : '') + uplift.toFixed(2) + '%';
+            pValDisplay.textContent = pValue.toFixed(4);
+            meterFill.style.width = confidence + '%';
+
+            // Coloring logic
+            if (uplift > 0) {
+                upliftVal.style.color = '#6ee7b7'; // Green
+            } else {
+                upliftVal.style.color = '#fca5a5'; // Red
+            }
+
+            // Decision Logic
+            if (confidence >= 95) {
+                if (isPositive) {
+                    resultTitle.textContent = "We have a Winner! 🎉";
+                    resultTitle.style.color = "#6ee7b7";
+                    resultDesc.textContent = `Variant B performed ${uplift.toFixed(1)}% better with ${confidence.toFixed(1)}% confidence. You can deploy this change.`;
+                    meterFill.style.background = "#10b981";
+                } else {
+                    resultTitle.textContent = "Variant B is a Loser 📉";
+                    resultTitle.style.color = "#ef4444";
+                    resultDesc.textContent = `Variant B performed ${Math.abs(uplift).toFixed(1)}% worse with high confidence. Do not deploy.`;
+                    meterFill.style.background = "#ef4444";
+                }
+            } else if (confidence >= 80) {
+                resultTitle.textContent = "Keep Testing ⏳";
+                resultTitle.style.color = "#f59e0b";
+                resultDesc.textContent = "There is a trend, but we don't have statistical significance yet. You need more data.";
+                meterFill.style.background = "#f59e0b";
+            } else {
+                resultTitle.textContent = "No Significant Difference 🤷";
+                resultTitle.style.color = "#94a3b8";
+                resultDesc.textContent = "The results are likely due to random chance. The test is inconclusive.";
+                meterFill.style.background = "#64748b";
+            }
+        }
+    </script>
+</body>
+</html>
