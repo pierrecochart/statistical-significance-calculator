@@ -3,35 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://pierrecochart.github.io/statistical-significance-calculator/">
     <title>A/B Winner: Statistical Significance Calculator | Pierre Cochart</title>
     <meta name="description" content="Determine the winner of your A/B tests with statistical confidence. Calculate conversion rates, significance levels, and sample sizes instantly.">
-    
+    <meta property="og:title" content="A/B Winner: Statistical Significance Calculator">
+    <meta property="og:description" content="Find out whether your A/B test result is statistically significant, with confidence level, uplift, and p-value. Free and client-side.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pierrecochart.github.io/statistical-significance-calculator/">
+    <meta property="og:image" content="https://placehold.co/1200x630/0F6E8C/FAFAF7?font=roboto&text=A%2FB+Winner">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://placehold.co/1200x630/0F6E8C/FAFAF7?font=roboto&text=A%2FB+Winner">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #0f172a;
-            --secondary: #64748b;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
+            --primary: #0F6E8C;
+            --primary-dark: #0B5570;
+            --bg: #EFEEE7;
+            --card: #FAFAF7;
+            --text: #191D22;
+            --secondary: #565C64;
+            --border: #DAD7CC;
+            --success: #2F8558;
+            --danger: #D14343;
+            --warning: #E8A33D;
+
+            /* Dark results panel palette — tuned versions of the signal
+               colours so they read cleanly against the brand's dark ink
+               background rather than reusing generic Tailwind slate/emerald. */
+            --dark-bg: #191D22;
+            --dark-track: #33383F;
+            --dark-muted: #A39D8F;
+            --dark-win-text: #7FD9A8;
+            --dark-loss-text: #F0A0A0;
+            --dark-warn-text: #F0C177;
+
+            /* Sitewide aliases, used by the header/footer/SEO block */
+            --paper: var(--card);
+            --panel: var(--bg);
+            --ink: var(--text);
+            --ink-soft: var(--secondary);
+            --line: var(--border);
+            --blueprint: var(--primary);
+            --blueprint-dark: var(--primary-dark);
+            --amber: #E8A33D;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); padding: 2rem 1rem; line-height: 1.6; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        body { font-family: var(--font-body); background-color: var(--bg); color: var(--text); padding: 0 0 2rem; line-height: 1.6; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 1rem; }
 
-        header { text-align: center; margin-bottom: 3rem; }
+        header.page-header { text-align: center; margin: 2.5rem 0 3rem; }
         h1 {
-            font-size: 2.75rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
+            font-family: var(--font-display);
+            font-size: 2.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, #57A9C4 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .subtitle { color: var(--secondary); font-size: 1.1rem; }
@@ -43,7 +75,7 @@
 
         .variant-card {
             background: var(--card); border-radius: 1.25rem; border: 1px solid var(--border);
-            padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); position: relative;
+            padding: 2rem; position: relative;
             transition: transform 0.2s;
         }
         .variant-card:hover { transform: translateY(-2px); border-color: var(--primary); }
@@ -52,242 +84,581 @@
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
             border-bottom: 1px solid var(--border); padding-bottom: 1rem;
         }
-        .variant-title { font-weight: 800; font-size: 1.1rem; color: var(--text); }
+        .variant-title { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--text); }
         .variant-badge {
-            background: #eef2ff; color: var(--primary); padding: 0.25rem 0.75rem;
-            border-radius: 1rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            background: #DCEAEE; color: var(--primary); padding: 0.25rem 0.75rem;
+            border-radius: 1rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            font-family: var(--font-mono); letter-spacing: 0.04em;
         }
 
         .input-group { margin-bottom: 1.25rem; }
-        .input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem; text-transform: uppercase; }
-        
+        .input-group label { display: block; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; color: var(--secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
         input[type="number"] {
             width: 100%; padding: 0.8rem; border: 2px solid var(--border); border-radius: 0.75rem;
-            font-size: 1.1rem; font-family: 'Inter', sans-serif; transition: 0.2s;
+            font-size: 1.1rem; font-family: var(--font-body); transition: 0.2s;
+            background: var(--card); color: var(--text);
         }
-        input[type="number"]:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+        input[type="number"]:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(15, 110, 140, 0.1); }
 
         /* Results Panel */
         .results-panel {
-            background: #1e293b; color: white; border-radius: 1.5rem; padding: 2.5rem;
+            background: var(--dark-bg); color: white; border-radius: 1.5rem; padding: 2.5rem;
             text-align: center; margin-bottom: 3rem; position: relative; overflow: hidden;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
 
-        .result-main { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
-        .result-sub { font-size: 1.1rem; color: #94a3b8; max-width: 600px; margin: 0 auto; }
-        
+        .result-main { font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .result-sub { font-size: 1.05rem; color: var(--dark-muted); max-width: 600px; margin: 0 auto; }
+
         .confidence-meter {
-            height: 8px; background: #334155; border-radius: 4px; margin: 2rem auto 1rem;
+            height: 8px; background: var(--dark-track); border-radius: 4px; margin: 2rem auto 1rem;
             max-width: 400px; position: relative; overflow: hidden;
         }
         .confidence-fill {
-            height: 100%; background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            height: 100%; background: linear-gradient(90deg, #D14343 0%, #E8A33D 50%, #2F8558 100%);
             width: 0%; transition: width 1s ease-out;
         }
 
         .stats-row {
             display: flex; justify-content: center; gap: 3rem; margin-top: 2rem;
-            border-top: 1px solid #334155; padding-top: 2rem;
+            border-top: 1px solid var(--dark-track); padding-top: 2rem;
         }
         .stat-box { text-align: center; }
-        .stat-val { font-size: 1.5rem; font-weight: 700; display: block; margin-bottom: 0.25rem; }
-        .stat-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-val { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; display: block; margin-bottom: 0.25rem; }
+        .stat-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--dark-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
         /* Tooltip Logic */
         .tooltip { position: relative; display: inline-block; cursor: help; margin-left: 5px; }
         .tooltip .tooltiptext {
-            visibility: hidden; width: 200px; background-color: #333; color: #fff; text-align: center;
+            visibility: hidden; width: 200px; background-color: var(--dark-bg); color: #fff; text-align: center;
             border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%;
             margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 0.75rem; font-weight: 400; text-transform: none;
+            font-family: var(--font-body);
         }
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-
-        .footer-cta { margin-top: 5rem; text-align: center; border-top: 1px solid var(--border); padding-top: 3rem; }
 
         @media (max-width: 768px) {
             .calculator-grid { grid-template-columns: 1fr; }
             .stats-row { flex-direction: column; gap: 1.5rem; }
         }
+
+        /* Buy Me a Coffee card (standardised component) */
+        .bmc-card { margin-top: 3.5rem; text-align: center; border-top: 1px solid var(--line); padding-top: 2rem; }
+        .bmc-card__icon { font-size: 1.4rem; margin-bottom: 6px; }
+        .bmc-card__heading { font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; color: var(--ink); margin: 0 0 6px; }
+        .bmc-card__text { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.5; }
+        .bmc-card__button { display: inline-flex; align-items: center; gap: 8px; background: var(--blueprint); color: #fff; text-decoration: none; font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; padding: 10px 18px; border-radius: 6px; transition: background .15s ease; }
+        .bmc-card__button:hover { background: var(--blueprint-dark); }
+        .bmc-card__button svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+        /* --- Site header --- */
+        .site-header { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 100; font-family: var(--font-body); }
+        .site-header__ruler { height: 4px; background-image: repeating-linear-gradient(90deg, var(--blueprint) 0 1px, transparent 1px 12px); opacity: 0.5; }
+        .site-header__inner { max-width: 1140px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .site-header__brand { text-decoration: none; color: var(--ink); line-height: 1.1; }
+        .site-header__eyebrow { display: block; font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.14em; color: var(--blueprint); text-transform: uppercase; margin-bottom: 2px; }
+        .site-header__wordmark { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--ink); }
+        .nav-toggle { display: none; flex-direction: column; gap: 4px; background: none; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; padding: 8px 10px; }
+        .nav-toggle span { width: 18px; height: 2px; background: var(--ink); display: block; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+        .site-nav__list { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+        .site-nav__item { position: relative; }
+        .site-nav__link { background: none; border: none; font: inherit; font-family: var(--font-body); font-weight: 500; font-size: 0.92rem; cursor: pointer; padding: 9px 12px; color: var(--ink); text-decoration: none; display: inline-block; border-radius: 4px; }
+        .site-nav__link:hover, .site-nav__link:focus { color: var(--blueprint); background: var(--panel); }
+        .dropdown { list-style: none; margin: 0; padding: 6px; position: absolute; top: 100%; left: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 10px 28px rgba(25,29,34,0.10); min-width: 250px; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity .15s ease, transform .15s ease, visibility .15s; }
+        .has-dropdown:hover .dropdown, .has-dropdown:focus-within .dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown li a { display: block; padding: 8px 10px; color: var(--ink); text-decoration: none; border-radius: 4px; font-size: 0.88rem; border-left: 2px solid transparent; }
+        .dropdown li a:hover, .dropdown li a:focus { background: var(--panel); border-left-color: var(--blueprint); color: var(--blueprint-dark); }
+        @media (max-width: 860px) {
+          .nav-toggle { display: flex; }
+          .site-nav { display: none; width: 100%; order: 3; }
+          .site-nav.is-open { display: block; }
+          .site-nav__list { flex-direction: column; gap: 0; }
+          .site-nav__item { width: 100%; }
+          .dropdown { position: static; opacity: 1; visibility: visible; transform: none; box-shadow: none; border: none; display: none; padding-left: 10px; }
+          .has-dropdown.is-open .dropdown { display: block; }
+          .site-header__inner { flex-wrap: wrap; }
+        }
+
+        /* --- SEO content block --- */
+        .tool-content { max-width: 780px; margin: 64px auto 0; padding: 0 1rem; font-family: var(--font-body); color: var(--ink); line-height: 1.65; }
+        .tool-content h2 { font-family: var(--font-display); font-size: 1.5rem; margin: 40px 0 14px; color: var(--ink); }
+        .tool-content p { font-size: 0.98rem; color: var(--ink-soft); margin: 0 0 14px; }
+        .faq-item { position: relative; border: 1px solid var(--line); border-radius: 6px; padding: 4px 16px; margin-bottom: 10px; background: var(--paper); }
+        .faq-item::before, .faq-item::after { content: ""; position: absolute; width: 10px; height: 10px; border-color: var(--blueprint); border-style: solid; opacity: 0.6; }
+        .faq-item::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .faq-item::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+        .faq-item summary { cursor: pointer; font-weight: 600; padding: 14px 0; font-size: 0.96rem; list-style: none; }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary::after { content: "+"; float: right; font-family: var(--font-mono); color: var(--blueprint); }
+        .faq-item[open] summary::after { content: "–"; }
+        .faq-item p { padding-bottom: 14px; margin: 0; }
+        .related-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+        .related-tools__card { position: relative; display: block; border: 1px solid var(--line); border-radius: 6px; padding: 18px; text-decoration: none; background: var(--paper); transition: border-color .15s ease; }
+        .related-tools__card:hover { border-color: var(--blueprint); }
+        .related-tools__card::before, .related-tools__card::after { content: ""; position: absolute; width: 10px; height: 10px; border-color: var(--blueprint); border-style: solid; opacity: 0.6; }
+        .related-tools__card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .related-tools__card::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+        .related-tools__eyebrow { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blueprint); margin: 0 0 6px; }
+        .related-tools__name { font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; color: var(--ink); margin: 0 0 4px; }
+        .related-tools__desc { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
+        @media (max-width: 720px) { .related-tools { grid-template-columns: 1fr; } }
+
+        /* --- Site footer --- */
+        .site-footer { background: var(--panel); border-top: 1px solid var(--line); margin-top: 60px; font-family: var(--font-body); }
+        .site-footer__cta { border-bottom: 1px solid var(--line); }
+        .site-footer__cta-inner { max-width: 1140px; margin: 0 auto; padding: 36px 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .site-footer__cta-text { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blueprint); margin: 0 0 4px; }
+        .site-footer__cta-heading { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; color: var(--ink); margin: 0; }
+        .site-footer__cta-link { font-family: var(--font-body); font-weight: 600; font-size: 0.9rem; color: #fff; background: var(--blueprint); text-decoration: none; padding: 12px 20px; border-radius: 6px; white-space: nowrap; transition: background .15s ease; }
+        .site-footer__cta-link:hover { background: var(--blueprint-dark); }
+        .site-footer__inner { max-width: 1140px; margin: 0 auto; padding: 40px 20px 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .site-footer__col h3 { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+        .site-footer__col ul { list-style: none; margin: 0; padding: 0; }
+        .site-footer__col li { margin-bottom: 8px; }
+        .site-footer__col a { color: var(--ink); text-decoration: none; font-size: 0.9rem; }
+        .site-footer__col a:hover { color: var(--blueprint); text-decoration: underline; }
+        .site-footer__bottom { max-width: 1140px; margin: 0 auto; padding: 18px 20px 30px; border-top: 1px solid var(--line); font-size: 0.82rem; color: var(--ink-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .site-footer__bottom a { color: var(--ink-soft); }
+        .site-footer__bottom a:hover { color: var(--blueprint); }
+        @media (max-width: 860px) { .site-footer__inner { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>A/B Winner</h1>
-            <p class="subtitle">Calculate statistical significance for your conversion optimization tests.</p>
-        </header>
+<header class="site-header">
+  <div class="site-header__ruler"></div>
+  <div class="site-header__inner">
+    <a class="site-header__brand" href="https://pierrecochart.github.io/">
+      <span class="site-header__eyebrow">Free Web Toolkit</span>
+      <span class="site-header__wordmark">Pierre Cochart</span>
+    </a>
 
-        <div class="calculator-grid">
-            <div class="variant-card">
-                <div class="variant-header">
-                    <span class="variant-title">Variant A</span>
-                    <span class="variant-badge">Control</span>
-                </div>
-                <div class="input-group">
-                    <label>Visitors (Sessions) <span class="tooltip">ℹ️<span class="tooltiptext">Total number of unique users who saw this version.</span></span></label>
-                    <input type="number" id="visitors-a" placeholder="e.g. 5000">
-                </div>
-                <div class="input-group">
-                    <label>Conversions (Goals)</label>
-                    <input type="number" id="conversions-a" placeholder="e.g. 200">
-                </div>
-                <div style="text-align: right; color: var(--secondary); font-size: 0.9rem;">
-                    Conv. Rate: <strong id="cr-a">0%</strong>
-                </div>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="siteNav">
+      <span></span><span></span><span></span>
+      <span class="sr-only">Menu</span>
+    </button>
+
+    <nav class="site-nav" id="siteNav">
+      <ul class="site-nav__list">
+        <li class="site-nav__item has-dropdown">
+          <button class="site-nav__link" aria-expanded="false">Image &amp; Media</button>
+          <ul class="dropdown">
+            <li><a href="https://pierrecochart.github.io/image-cropper/">Bulk Image Cropper</a></li>
+            <li><a href="https://pierrecochart.github.io/image-background-remover/">Image Background Remover</a></li>
+            <li><a href="https://pierrecochart.github.io/color-palette-generator/">Color Palette Generator</a></li>
+            <li><a href="https://pierrecochart.github.io/duotone-generator/">Duotone Generator</a></li>
+            <li><a href="https://pierrecochart.github.io/image-dithering-tool/">Image Dithering Tool</a></li>
+            <li><a href="https://pierrecochart.github.io/advanced-image-cropping-tool/">Advanced Image Cropper</a></li>
+            <li><a href="https://pierrecochart.github.io/image-to-webp-converter/">Image to WebP Converter</a></li>
+            <li><a href="https://pierrecochart.github.io/quickfav-favicon-maker/">QuickFav Favicon Maker</a></li>
+            <li><a href="https://pierrecochart.github.io/svg-cleaner/">SVG Cleaner</a></li>
+            <li><a href="https://pierrecochart.github.io/code-screenshot-image-creator/">Code Screenshot Generator</a></li>
+          </ul>
+        </li>
+        <li class="site-nav__item has-dropdown">
+          <button class="site-nav__link" aria-expanded="false">SEO &amp; Content</button>
+          <ul class="dropdown">
+            <li><a href="https://pierrecochart.github.io/canonical-generating-tool/">Canonical Generator</a></li>
+            <li><a href="https://pierrecochart.github.io/useful-links-builder/">Useful Links Builder</a></li>
+            <li><a href="https://pierrecochart.github.io/hreflang-generator-tool/">Hreflang Generator</a></li>
+            <li><a href="https://pierrecochart.github.io/website-migration-bulk-redirect-tool/">Bulk Redirect Mapper</a></li>
+            <li><a href="https://pierrecochart.github.io/google-dork-search-operator-tool/">Google Dork Builder</a></li>
+            <li><a href="https://pierrecochart.github.io/keyword-mixer-tool/">Keyword Mixer</a></li>
+            <li><a href="https://pierrecochart.github.io/SERP-Snippet-Viewer-Optimiser/">SERP Simulator</a></li>
+            <li><a href="https://pierrecochart.github.io/seo-bulk-header-audit-tool/">SEO Header Audit</a></li>
+            <li><a href="https://pierrecochart.github.io/faq-generator/">FAQ &amp; Schema Generator</a></li>
+            <li><a href="https://pierrecochart.github.io/internal-link-weaver/">Internal Link Weaver</a></li>
+            <li><a href="https://pierrecochart.github.io/word-character-counter-read-time/">Word &amp; Character Counter</a></li>
+            <li><a href="https://pierrecochart.github.io/ai-blog-summarizer-button-generator/">AI Blog Summarizer</a></li>
+          </ul>
+        </li>
+        <li class="site-nav__item has-dropdown">
+          <button class="site-nav__link" aria-expanded="false">PPC &amp; Analytics</button>
+          <ul class="dropdown">
+            <li><a href="https://pierrecochart.github.io/google-adwords-campaign-architect-tool/">AdWords Architect</a></li>
+            <li><a href="https://pierrecochart.github.io/roas-modeller/">ROAS Modeller</a></li>
+            <li><a href="https://pierrecochart.github.io/statistical-significance-calculator/">Significance Calculator</a></li>
+          </ul>
+        </li>
+        <li class="site-nav__item has-dropdown">
+          <button class="site-nav__link" aria-expanded="false">Development</button>
+          <ul class="dropdown">
+            <li><a href="https://pierrecochart.github.io/document-html-link-remover/">Link Remover Tool</a></li>
+            <li><a href="https://pierrecochart.github.io/word-doc-content-sanitizer/">Word Content Sanitizer</a></li>
+            <li><a href="https://pierrecochart.github.io/github-website-builder/">GitHub Website Builder</a></li>
+            <li><a href="https://pierrecochart.github.io/html-editor/">HTML Editor</a></li>
+            <li><a href="https://pierrecochart.github.io/app-store-event-previewer/">App Store Event Previewer</a></li>
+          </ul>
+        </li>
+        <li class="site-nav__item">
+          <a class="site-nav__link" href="https://searchfoundry.co.uk" target="_blank" rel="noopener">SEO/PPC Help ↗</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+    <header class="page-header">
+        <h1>A/B Winner</h1>
+        <p class="subtitle">Calculate statistical significance for your conversion optimization tests.</p>
+    </header>
+
+    <div class="calculator-grid">
+        <div class="variant-card">
+            <div class="variant-header">
+                <span class="variant-title">Variant A</span>
+                <span class="variant-badge">Control</span>
             </div>
-
-            <div class="variant-card" style="border-color: var(--primary);">
-                <div class="variant-header">
-                    <span class="variant-title" style="color: var(--primary);">Variant B</span>
-                    <span class="variant-badge" style="background: #e0e7ff; color: var(--primary);">Challenger</span>
-                </div>
-                <div class="input-group">
-                    <label>Visitors (Sessions)</label>
-                    <input type="number" id="visitors-b" placeholder="e.g. 5000">
-                </div>
-                <div class="input-group">
-                    <label>Conversions (Goals)</label>
-                    <input type="number" id="conversions-b" placeholder="e.g. 250">
-                </div>
-                <div style="text-align: right; color: var(--primary); font-size: 0.9rem;">
-                    Conv. Rate: <strong id="cr-b">0%</strong>
-                </div>
+            <div class="input-group">
+                <label>Visitors (Sessions) <span class="tooltip">ℹ️<span class="tooltiptext">Total number of unique users who saw this version.</span></span></label>
+                <input type="number" id="visitors-a" placeholder="e.g. 5000">
+            </div>
+            <div class="input-group">
+                <label>Conversions (Goals)</label>
+                <input type="number" id="conversions-a" placeholder="e.g. 200">
+            </div>
+            <div style="text-align: right; color: var(--secondary); font-size: 0.9rem;">
+                Conv. Rate: <strong id="cr-a">0%</strong>
             </div>
         </div>
 
-        <div class="results-panel">
-            <h2 class="result-main" id="result-title">Waiting for Data...</h2>
-            <p class="result-sub" id="result-desc">Enter your test data above to see if your results are statistically significant.</p>
-            
-            <div class="confidence-meter">
-                <div class="confidence-fill" id="meter-fill"></div>
+        <div class="variant-card" style="border-color: var(--primary);">
+            <div class="variant-header">
+                <span class="variant-title" style="color: var(--primary);">Variant B</span>
+                <span class="variant-badge">Challenger</span>
             </div>
-            
-            <div class="stats-row">
-                <div class="stat-box">
-                    <span class="stat-val" id="confidence-val">0%</span>
-                    <span class="stat-label">Confidence Level</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-val" id="uplift-val">0%</span>
-                    <span class="stat-label">Observed Uplift</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-val" id="p-val">-</span>
-                    <span class="stat-label">P-Value</span>
-                </div>
+            <div class="input-group">
+                <label>Visitors (Sessions)</label>
+                <input type="number" id="visitors-b" placeholder="e.g. 5000">
+            </div>
+            <div class="input-group">
+                <label>Conversions (Goals)</label>
+                <input type="number" id="conversions-b" placeholder="e.g. 250">
+            </div>
+            <div style="text-align: right; color: var(--primary); font-size: 0.9rem;">
+                Conv. Rate: <strong id="cr-b">0%</strong>
             </div>
         </div>
-
-        <footer class="footer-cta">
-            <a href="https://www.buymeacoffee.com/PierreCochart" target="_blank">
-                <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 50px; width: 217px;">
-            </a>
-            <p style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--secondary);">Built by Pierre Cochart</p>
-        </footer>
     </div>
 
-    <script>
-        // Inputs
-        const inputs = document.querySelectorAll('input[type="number"]');
-        const visitorsA = document.getElementById('visitors-a');
-        const conversionsA = document.getElementById('conversions-a');
-        const visitorsB = document.getElementById('visitors-b');
-        const conversionsB = document.getElementById('conversions-b');
+    <div class="results-panel">
+        <h2 class="result-main" id="result-title">Waiting for Data...</h2>
+        <p class="result-sub" id="result-desc">Enter your test data above to see if your results are statistically significant.</p>
 
-        // Outputs
-        const crA = document.getElementById('cr-a');
-        const crB = document.getElementById('cr-b');
-        const resultTitle = document.getElementById('result-title');
-        const resultDesc = document.getElementById('result-desc');
-        const meterFill = document.getElementById('meter-fill');
-        const confidenceVal = document.getElementById('confidence-val');
-        const upliftVal = document.getElementById('uplift-val');
-        const pValDisplay = document.getElementById('p-val');
+        <div class="confidence-meter">
+            <div class="confidence-fill" id="meter-fill"></div>
+        </div>
 
-        // Event Listeners
-        inputs.forEach(input => input.addEventListener('input', calculate));
+        <div class="stats-row">
+            <div class="stat-box">
+                <span class="stat-val" id="confidence-val">0%</span>
+                <span class="stat-label">Confidence Level</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-val" id="uplift-val">0%</span>
+                <span class="stat-label">Observed Uplift</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-val" id="p-val">-</span>
+                <span class="stat-label">P-Value</span>
+            </div>
+        </div>
+    </div>
 
-        function calculate() {
-            const vA = parseInt(visitorsA.value) || 0;
-            const cA = parseInt(conversionsA.value) || 0;
-            const vB = parseInt(visitorsB.value) || 0;
-            const cB = parseInt(conversionsB.value) || 0;
+    <div class="bmc-card">
+        <div class="bmc-card__icon">☕</div>
+        <p class="bmc-card__heading">This tool is free to use</p>
+        <p class="bmc-card__text">If it saved you some time, consider buying me a coffee to support future updates.</p>
+        <a class="bmc-card__button" href="https://www.buymeacoffee.com/PierreCochart" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h14a2 2 0 0 1 2 2v1a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M20 12h1a2 2 0 0 1 2 2 3 3 0 0 1-3 3h-1" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 3c-.5 1-.5 1.8 0 2.5M12 3c-.5 1-.5 1.8 0 2.5M16 3c-.5 1-.5 1.8 0 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Buy me a coffee
+        </a>
+    </div>
+</div>
 
-            // Basic CR Calculation
-            const rateA = vA > 0 ? (cA / vA) : 0;
-            const rateB = vB > 0 ? (cB / vB) : 0;
+<!-- ============================================================ -->
+<!-- SEO CONTENT BLOCK -->
+<!-- ============================================================ -->
+<section class="tool-content">
 
-            crA.textContent = (rateA * 100).toFixed(2) + '%';
-            crB.textContent = (rateB * 100).toFixed(2) + '%';
+  <h2>What does A/B Winner do?</h2>
+  <p>A/B Winner runs a two-proportion z-test on your test data — the standard statistical method for comparing conversion rates between two variants — and tells you whether Variant B's result is a genuine difference or could plausibly be random noise. Enter visitors and conversions for both variants, and it calculates confidence level, observed uplift, and p-value in real time as you type.</p>
+  <p>The verdict banner gives you a plain-English read: a clear winner or loser at 95%+ confidence, a "keep testing" signal between 80–95%, or "no significant difference" below that. The colour-coded confidence meter gives a quick visual sense of how close you are to a reliable result.</p>
+  <p>This is built for anyone running CRO or landing page tests — the goal is to stop teams calling a test "won" off a handful of extra conversions that don't hold up statistically.</p>
 
-            if (vA === 0 || vB === 0) return;
+  <h2>Frequently asked questions</h2>
 
-            // Z-Score Calculation (Two-Proportion Z-Test)
-            const pPool = (cA + cB) / (vA + vB);
-            const se = Math.sqrt(pPool * (1 - pPool) * (1/vA + 1/vB));
-            const zScore = (rateB - rateA) / se;
+  <div class="faq-item">
+    <details>
+      <summary>Is A/B Winner free to use?</summary>
+      <p>Yes, completely free with no account or usage limit.</p>
+    </details>
+  </div>
 
-            // P-Value from Z-Score (Cumulative Distribution Function)
-            // Using an approximation for normal distribution
-            const pValue = 2 * (1 - cdf(Math.abs(zScore)));
-            const confidence = (1 - pValue) * 100;
+  <div class="faq-item">
+    <details>
+      <summary>What do confidence level and p-value actually mean?</summary>
+      <p>The p-value is the probability of seeing a difference this large (or larger) if there were genuinely no difference between the variants — a smaller p-value means the result is less likely to be random chance. Confidence level is simply 1 minus the p-value, expressed as a percentage; 95% confidence is the conventional threshold for calling a test statistically significant.</p>
+    </details>
+  </div>
 
-            // Uplift
-            const uplift = rateA > 0 ? ((rateB - rateA) / rateA) * 100 : 0;
+  <div class="faq-item">
+    <details>
+      <summary>What statistical test does this use?</summary>
+      <p>A two-proportion z-test, comparing the conversion rate of Variant B against Variant A using a pooled proportion and standard error calculation — the standard approach for comparing two conversion rates.</p>
+    </details>
+  </div>
 
-            updateUI(confidence, uplift, pValue, rateB > rateA);
+  <div class="faq-item">
+    <details>
+      <summary>How much traffic do I need before trusting the result?</summary>
+      <p>There's no fixed number — it depends on your baseline conversion rate and the size of the effect you're trying to detect. As a rule of thumb, be cautious of calling a winner on small sample sizes (a few hundred visitors per variant) even if confidence briefly crosses 95%, since results can swing significantly as more data comes in.</p>
+    </details>
+  </div>
+
+  <div class="faq-item">
+    <details>
+      <summary>Is my test data uploaded anywhere?</summary>
+      <p>No. Every calculation runs locally in your browser using plain JavaScript — nothing is sent to a server.</p>
+    </details>
+  </div>
+
+  <h2>Related tools</h2>
+  <div class="related-tools">
+    <a class="related-tools__card" href="https://pierrecochart.github.io/google-adwords-campaign-architect-tool/">
+      <p class="related-tools__eyebrow">PPC &amp; Analytics</p>
+      <p class="related-tools__name">Campaign Architect Pro</p>
+      <p class="related-tools__desc">Build and export the campaign your winning variant will run in.</p>
+    </a>
+    <a class="related-tools__card" href="https://pierrecochart.github.io/roas-modeller/">
+      <p class="related-tools__eyebrow">PPC &amp; Analytics</p>
+      <p class="related-tools__name">ROAS Modeller</p>
+      <p class="related-tools__desc">Check that a "winning" conversion rate is actually profitable.</p>
+    </a>
+    <a class="related-tools__card" href="https://pierrecochart.github.io/keyword-mixer-tool/">
+      <p class="related-tools__eyebrow">SEO &amp; Content</p>
+      <p class="related-tools__name">Keyword Mixer</p>
+      <p class="related-tools__desc">Generate keyword variations to test against your landing pages.</p>
+    </a>
+  </div>
+
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Is A/B Winner free to use?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, completely free with no account or usage limit." } },
+    { "@type": "Question", "name": "What do confidence level and p-value actually mean?", "acceptedAnswer": { "@type": "Answer", "text": "The p-value is the probability of seeing a difference this large if there were genuinely no difference between the variants. Confidence level is 1 minus the p-value, expressed as a percentage; 95% confidence is the conventional threshold for statistical significance." } },
+    { "@type": "Question", "name": "What statistical test does this use?", "acceptedAnswer": { "@type": "Answer", "text": "A two-proportion z-test, comparing the conversion rate of Variant B against Variant A using a pooled proportion and standard error calculation." } },
+    { "@type": "Question", "name": "How much traffic do I need before trusting the result?", "acceptedAnswer": { "@type": "Answer", "text": "There's no fixed number — it depends on your baseline conversion rate and the size of the effect you're trying to detect. Be cautious of calling a winner on small sample sizes even if confidence briefly crosses 95%." } },
+    { "@type": "Question", "name": "Is my test data uploaded anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "No. Every calculation runs locally in your browser using plain JavaScript — nothing is sent to a server." } }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "A/B Winner",
+  "url": "https://pierrecochart.github.io/statistical-significance-calculator/",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Any (runs in browser)",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
+  "creator": { "@type": "Person", "name": "Pierre Cochart", "url": "https://pierrecochart.github.io/" }
+}
+</script>
+
+<!-- ============================================================ -->
+<!-- SITE FOOTER -->
+<!-- ============================================================ -->
+<footer class="site-footer">
+  <div class="site-footer__cta">
+    <div class="site-footer__cta-inner">
+      <div>
+        <p class="site-footer__cta-text">Need more than a free tool?</p>
+        <p class="site-footer__cta-heading">The Search Foundry runs SEO &amp; PPC strategy for growing brands.</p>
+      </div>
+      <a class="site-footer__cta-link" href="https://searchfoundry.co.uk" target="_blank" rel="noopener">Talk to the agency ↗</a>
+    </div>
+  </div>
+
+  <div class="site-footer__inner">
+    <div class="site-footer__col">
+      <h3>Image &amp; Media</h3>
+      <ul>
+        <li><a href="https://pierrecochart.github.io/image-cropper/">Bulk Image Cropper</a></li>
+        <li><a href="https://pierrecochart.github.io/image-background-remover/">Image Background Remover</a></li>
+        <li><a href="https://pierrecochart.github.io/color-palette-generator/">Color Palette Generator</a></li>
+        <li><a href="https://pierrecochart.github.io/duotone-generator/">Duotone Generator</a></li>
+        <li><a href="https://pierrecochart.github.io/image-dithering-tool/">Image Dithering Tool</a></li>
+        <li><a href="https://pierrecochart.github.io/advanced-image-cropping-tool/">Advanced Image Cropper</a></li>
+        <li><a href="https://pierrecochart.github.io/image-to-webp-converter/">Image to WebP Converter</a></li>
+        <li><a href="https://pierrecochart.github.io/quickfav-favicon-maker/">QuickFav Favicon Maker</a></li>
+        <li><a href="https://pierrecochart.github.io/svg-cleaner/">SVG Cleaner</a></li>
+        <li><a href="https://pierrecochart.github.io/code-screenshot-image-creator/">Code Screenshot Generator</a></li>
+      </ul>
+    </div>
+    <div class="site-footer__col">
+      <h3>SEO &amp; Content</h3>
+      <ul>
+        <li><a href="https://pierrecochart.github.io/canonical-generating-tool/">Canonical Generator</a></li>
+        <li><a href="https://pierrecochart.github.io/useful-links-builder/">Useful Links Builder</a></li>
+        <li><a href="https://pierrecochart.github.io/hreflang-generator-tool/">Hreflang Generator</a></li>
+        <li><a href="https://pierrecochart.github.io/website-migration-bulk-redirect-tool/">Bulk Redirect Mapper</a></li>
+        <li><a href="https://pierrecochart.github.io/google-dork-search-operator-tool/">Google Dork Builder</a></li>
+        <li><a href="https://pierrecochart.github.io/keyword-mixer-tool/">Keyword Mixer</a></li>
+        <li><a href="https://pierrecochart.github.io/SERP-Snippet-Viewer-Optimiser/">SERP Simulator</a></li>
+        <li><a href="https://pierrecochart.github.io/seo-bulk-header-audit-tool/">SEO Header Audit</a></li>
+        <li><a href="https://pierrecochart.github.io/faq-generator/">FAQ &amp; Schema Generator</a></li>
+        <li><a href="https://pierrecochart.github.io/internal-link-weaver/">Internal Link Weaver</a></li>
+        <li><a href="https://pierrecochart.github.io/word-character-counter-read-time/">Word &amp; Character Counter</a></li>
+        <li><a href="https://pierrecochart.github.io/ai-blog-summarizer-button-generator/">AI Blog Summarizer</a></li>
+      </ul>
+    </div>
+    <div class="site-footer__col">
+      <h3>PPC &amp; Analytics</h3>
+      <ul>
+        <li><a href="https://pierrecochart.github.io/google-adwords-campaign-architect-tool/">AdWords Architect</a></li>
+        <li><a href="https://pierrecochart.github.io/roas-modeller/">ROAS Modeller</a></li>
+        <li><a href="https://pierrecochart.github.io/statistical-significance-calculator/">Significance Calculator</a></li>
+      </ul>
+    </div>
+    <div class="site-footer__col">
+      <h3>Development</h3>
+      <ul>
+        <li><a href="https://pierrecochart.github.io/document-html-link-remover/">Link Remover Tool</a></li>
+        <li><a href="https://pierrecochart.github.io/word-doc-content-sanitizer/">Word Content Sanitizer</a></li>
+        <li><a href="https://pierrecochart.github.io/github-website-builder/">GitHub Website Builder</a></li>
+        <li><a href="https://pierrecochart.github.io/html-editor/">HTML Editor</a></li>
+        <li><a href="https://pierrecochart.github.io/app-store-event-previewer/">App Store Event Previewer</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__bottom">
+    <p>&copy; <span id="footerYear"></span> <a href="https://uk.linkedin.com/in/pierrecochart">Pierre Cochart</a>. Free, open-source, client-side tools.</p>
+    <p>Built &amp; maintained by <a href="https://searchfoundry.co.uk" target="_blank" rel="noopener">The Search Foundry</a></p>
+  </div>
+</footer>
+
+<!-- Floating BMC widget — standard on every page -->
+<script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="PierreCochart" data-description="Support me on Buy me a coffee!" data-message="" data-color="#0F6E8C" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+
+<script>
+    const inputs = document.querySelectorAll('input[type="number"]');
+    const visitorsA = document.getElementById('visitors-a');
+    const conversionsA = document.getElementById('conversions-a');
+    const visitorsB = document.getElementById('visitors-b');
+    const conversionsB = document.getElementById('conversions-b');
+
+    const crA = document.getElementById('cr-a');
+    const crB = document.getElementById('cr-b');
+    const resultTitle = document.getElementById('result-title');
+    const resultDesc = document.getElementById('result-desc');
+    const meterFill = document.getElementById('meter-fill');
+    const confidenceVal = document.getElementById('confidence-val');
+    const upliftVal = document.getElementById('uplift-val');
+    const pValDisplay = document.getElementById('p-val');
+
+    inputs.forEach(input => input.addEventListener('input', calculate));
+
+    function calculate() {
+        const vA = parseInt(visitorsA.value) || 0;
+        const cA = parseInt(conversionsA.value) || 0;
+        const vB = parseInt(visitorsB.value) || 0;
+        const cB = parseInt(conversionsB.value) || 0;
+
+        const rateA = vA > 0 ? (cA / vA) : 0;
+        const rateB = vB > 0 ? (cB / vB) : 0;
+
+        crA.textContent = (rateA * 100).toFixed(2) + '%';
+        crB.textContent = (rateB * 100).toFixed(2) + '%';
+
+        if (vA === 0 || vB === 0) return;
+
+        const pPool = (cA + cB) / (vA + vB);
+        const se = Math.sqrt(pPool * (1 - pPool) * (1/vA + 1/vB));
+        const zScore = (rateB - rateA) / se;
+
+        const pValue = 2 * (1 - cdf(Math.abs(zScore)));
+        const confidence = (1 - pValue) * 100;
+
+        const uplift = rateA > 0 ? ((rateB - rateA) / rateA) * 100 : 0;
+
+        updateUI(confidence, uplift, pValue, rateB > rateA);
+    }
+
+    function cdf(x) {
+        const t = 1 / (1 + .2316419 * Math.abs(x));
+        const d = .3989423 * Math.exp(-x * x / 2);
+        let prob = d * t * (.3193815 + t * (-.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+        if (x > 0) prob = 1 - prob;
+        return prob;
+    }
+
+    function updateUI(confidence, uplift, pValue, isPositive) {
+        confidenceVal.textContent = confidence.toFixed(2) + '%';
+        upliftVal.textContent = (uplift > 0 ? '+' : '') + uplift.toFixed(2) + '%';
+        pValDisplay.textContent = pValue.toFixed(4);
+        meterFill.style.width = confidence + '%';
+
+        if (uplift > 0) {
+            upliftVal.style.color = '#7FD9A8';
+        } else {
+            upliftVal.style.color = '#F0A0A0';
         }
 
-        // Standard Normal Cumulative Distribution Function
-        function cdf(x) {
-            const t = 1 / (1 + .2316419 * Math.abs(x));
-            const d = .3989423 * Math.exp(-x * x / 2);
-            let prob = d * t * (.3193815 + t * (-.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-            if (x > 0) prob = 1 - prob;
-            return prob;
-        }
-
-        function updateUI(confidence, uplift, pValue, isPositive) {
-            confidenceVal.textContent = confidence.toFixed(2) + '%';
-            upliftVal.textContent = (uplift > 0 ? '+' : '') + uplift.toFixed(2) + '%';
-            pValDisplay.textContent = pValue.toFixed(4);
-            meterFill.style.width = confidence + '%';
-
-            // Coloring logic
-            if (uplift > 0) {
-                upliftVal.style.color = '#6ee7b7'; // Green
+        if (confidence >= 95) {
+            if (isPositive) {
+                resultTitle.textContent = "We have a Winner! 🎉";
+                resultTitle.style.color = "#7FD9A8";
+                resultDesc.textContent = `Variant B performed ${uplift.toFixed(1)}% better with ${confidence.toFixed(1)}% confidence. You can deploy this change.`;
+                meterFill.style.background = "#2F8558";
             } else {
-                upliftVal.style.color = '#fca5a5'; // Red
+                resultTitle.textContent = "Variant B is a Loser 📉";
+                resultTitle.style.color = "#F0A0A0";
+                resultDesc.textContent = `Variant B performed ${Math.abs(uplift).toFixed(1)}% worse with high confidence. Do not deploy.`;
+                meterFill.style.background = "#D14343";
             }
-
-            // Decision Logic
-            if (confidence >= 95) {
-                if (isPositive) {
-                    resultTitle.textContent = "We have a Winner! 🎉";
-                    resultTitle.style.color = "#6ee7b7";
-                    resultDesc.textContent = `Variant B performed ${uplift.toFixed(1)}% better with ${confidence.toFixed(1)}% confidence. You can deploy this change.`;
-                    meterFill.style.background = "#10b981";
-                } else {
-                    resultTitle.textContent = "Variant B is a Loser 📉";
-                    resultTitle.style.color = "#ef4444";
-                    resultDesc.textContent = `Variant B performed ${Math.abs(uplift).toFixed(1)}% worse with high confidence. Do not deploy.`;
-                    meterFill.style.background = "#ef4444";
-                }
-            } else if (confidence >= 80) {
-                resultTitle.textContent = "Keep Testing ⏳";
-                resultTitle.style.color = "#f59e0b";
-                resultDesc.textContent = "There is a trend, but we don't have statistical significance yet. You need more data.";
-                meterFill.style.background = "#f59e0b";
-            } else {
-                resultTitle.textContent = "No Significant Difference 🤷";
-                resultTitle.style.color = "#94a3b8";
-                resultDesc.textContent = "The results are likely due to random chance. The test is inconclusive.";
-                meterFill.style.background = "#64748b";
-            }
+        } else if (confidence >= 80) {
+            resultTitle.textContent = "Keep Testing ⏳";
+            resultTitle.style.color = "#F0C177";
+            resultDesc.textContent = "There is a trend, but we don't have statistical significance yet. You need more data.";
+            meterFill.style.background = "#E8A33D";
+        } else {
+            resultTitle.textContent = "No Significant Difference 🤷";
+            resultTitle.style.color = "#A39D8F";
+            resultDesc.textContent = "The results are likely due to random chance. The test is inconclusive.";
+            meterFill.style.background = "#6B6F76";
         }
-    </script>
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var footerYearEl = document.getElementById('footerYear');
+        if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
+
+        var toggle = document.getElementById('navToggle');
+        var nav = document.getElementById('siteNav');
+        if (toggle && nav) {
+            toggle.addEventListener('click', function () {
+                var isOpen = nav.classList.toggle('is-open');
+                toggle.setAttribute('aria-expanded', isOpen);
+            });
+        }
+        document.querySelectorAll('.has-dropdown > .site-nav__link').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (window.innerWidth > 860) return;
+                var parent = btn.closest('.has-dropdown');
+                var isOpen = parent.classList.toggle('is-open');
+                btn.setAttribute('aria-expanded', isOpen);
+            });
+        });
+    });
+</script>
 </body>
 </html>
